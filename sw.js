@@ -5,15 +5,13 @@ const urlsToCache = [
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png'
-  // Add other assets (CSS, JS files, etc.) if needed.
+  // Add any additional assets (CSS, JS) here.
 ];
 
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        return cache.addAll(urlsToCache);
-      })
+      .then(cache => cache.addAll(urlsToCache))
   );
 });
 
