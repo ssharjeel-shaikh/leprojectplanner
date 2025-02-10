@@ -5,16 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Advanced Project & Session Planner</title>
 
-  <!-- Link to the manifest file for PWA configuration -->
+  <!-- PWA Manifest and iOS Meta Tags -->
   <link rel="manifest" href="manifest.json">
-  
-  <!-- iOS-specific meta tags for a full-screen, installable experience -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="icon-192.png">
-  
+
   <style>
-    /* Basic styling for the app */
+    /* Basic CSS styling */
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
@@ -96,16 +94,21 @@
       <label for="sessionPlan">Session Plan Details:</label>
       <textarea id="sessionPlan" placeholder="Describe your session plan details (if any)"></textarea>
     </div>
-    <!-- Button that calls generateTasks() when clicked -->
+    <!-- Button to generate tasks -->
     <button onclick="generateTasks()">Generate Tasks</button>
   </div>
 
-  <!-- Generated Tasks -->
+  <!-- Extra Buttons for enhanced functionality -->
+  <button onclick="loadSavedTasks()">Load Saved To‑Do List</button>
+  <button onclick="scheduleNotifications()">Schedule Reminders</button>
+
+  <!-- To‑Do List (Tasks Table) -->
   <div id="tasksContainer">
-    <h2>Tasks to Prepare</h2>
+    <h2>To‑Do List</h2>
     <table id="tasksTable">
       <thead>
         <tr>
+          <th>Done</th>
           <th>Task</th>
           <th>Due Date</th>
           <th>Days Remaining</th>
@@ -117,10 +120,15 @@
     </table>
   </div>
 
-  <!-- JavaScript: Define the generateTasks() function -->
+  <!-- Main JavaScript Code -->
   <script>
+    // Global array to store tasks
+    let tasksList = [];
+
+    // Function to generate tasks based on inputs and save them to localStorage
     function generateTasks() {
-      // Clear any existing tasks
+      // Clear previous tasks
+      tasksList = [];
       const tbody = document.querySelector('#tasksTable tbody');
       tbody.innerHTML = '';
 
@@ -137,54 +145,49 @@
 
       const milestoneDate = new Date(milestoneDateInput);
 
-      // Define base tasks with default lead times (in days)
-      let tasks = [
+      // Base tasks with default lead times (in days)
+      let baseTasks = [
         { name: "Invite Guests/Mentors", leadTime: 10 },
         { name: "Buy Supplies", leadTime: 2 },
         { name: "Print Collaterals", leadTime: 1 }
       ];
 
-      // Add task if session plan details are provided
       if (sessionPlan !== "") {
-        tasks.push({ name: "Review Session Plan Details", leadTime: 3 });
+        baseTasks.push({ name: "Review Session Plan Details", leadTime: 3 });
       }
-
-      // Add conditional tasks based on keywords in project outcomes
       if (projectOutcome.includes("marketing")) {
-        tasks.push({ name: "Prepare Marketing Materials", leadTime: 5 });
+        baseTasks.push({ name: "Prepare Marketing Materials", leadTime: 5 });
       }
       if (projectOutcome.includes("finance") || projectOutcome.includes("budget")) {
-        tasks.push({ name: "Review Budget and Funding", leadTime: 7 });
+        baseTasks.push({ name: "Review Budget and Funding", leadTime: 7 });
       }
       if (projectOutcome.includes("technology") || projectOutcome.includes("tech") || projectOutcome.includes("it")) {
-        tasks.push({ name: "Test Technical Equipment Setup", leadTime: 3 });
+        baseTasks.push({ name: "Test Technical Equipment Setup", leadTime: 3 });
       }
       if (projectOutcome.includes("training")) {
-        tasks.push({ name: "Plan Training Agenda", leadTime: 4 });
+        baseTasks.push({ name: "Plan Training Agenda", leadTime: 4 });
       }
       if (projectOutcome.includes("workshop")) {
-        tasks.push({ name: "Arrange Workshop Logistics", leadTime: 4 });
+        baseTasks.push({ name: "Arrange Workshop Logistics", leadTime: 4 });
       }
       if (projectOutcome.includes("seminar")) {
-        tasks.push({ name: "Prepare Seminar Slides", leadTime: 3 });
+        baseTasks.push({ name: "Prepare Seminar Slides", leadTime: 3 });
       }
-
-      // Add conditional tasks based on keywords in session plan details
       if (sessionPlan.includes("workshop")) {
-        tasks.push({ name: "Setup Workshop Materials", leadTime: 2 });
+        baseTasks.push({ name: "Setup Workshop Materials", leadTime: 2 });
       }
       if (sessionPlan.includes("training")) {
-        tasks.push({ name: "Organize Training Resources", leadTime: 4 });
+        baseTasks.push({ name: "Organize Training Resources", leadTime: 4 });
       }
       if (sessionPlan.includes("seminar")) {
-        tasks.push({ name: "Finalize Seminar Presentation", leadTime: 3 });
+        baseTasks.push({ name: "Finalize Seminar Presentation", leadTime: 3 });
       }
       if (sessionPlan.includes("interactive")) {
-        tasks.push({ name: "Plan Interactive Activities", leadTime: 5 });
+        baseTasks.push({ name: "Plan Interactive Activities", leadTime: 5 });
       }
 
-      // Loop through tasks and calculate due dates and days remaining
-      tasks.forEach(task => {
+      // Process each task: calculate due date and days remaining, and add to tasksList
+      baseTasks.forEach(task => {
         let dueDate = new Date(milestoneDate);
         dueDate.setDate(dueDate.getDate() - task.leadTime);
 
@@ -193,31 +196,120 @@
         let diffTime = dueDate - today;
         let daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-        // Create a table row for the task
+        let taskItem = {
+          name: task.name + " for " + projectName,
+          dueDate: dueDate,
+          daysRemaining: daysRemaining,
+          completed: false
+        };
+
+        tasksList.push(taskItem);
+      });
+
+      // Save tasks to localStorage
+      localStorage.setItem("tasksList", JSON.stringify(tasksList));
+
+      // Render the tasks table
+      renderTasksTable();
+      alert("Tasks generated and saved to your to‑do list!");
+    }
+
+    // Function to render the tasks table from tasksList
+    function renderTasksTable() {
+      const tbody = document.querySelector('#tasksTable tbody');
+      tbody.innerHTML = '';
+      tasksList.forEach((task, index) => {
         let tr = document.createElement('tr');
 
-        // Add visual cues: mark overdue tasks in red, upcoming tasks in yellow
-        if (daysRemaining < 0) {
+        // Checkbox for marking complete
+        let tdCheckbox = document.createElement('td');
+        let checkbox = document.createElement('input');
+        checkbox.type = "checkbox";
+        checkbox.checked = task.completed;
+        checkbox.addEventListener('change', function() {
+          tasksList[index].completed = this.checked;
+          localStorage.setItem("tasksList", JSON.stringify(tasksList));
+          // Update row styling
+          tr.style.textDecoration = this.checked ? "line-through" : "none";
+        });
+        tdCheckbox.appendChild(checkbox);
+        tr.appendChild(tdCheckbox);
+
+        // Task description
+        let tdTask = document.createElement('td');
+        tdTask.textContent = task.name;
+        tr.appendChild(tdTask);
+
+        // Due date
+        let tdDue = document.createElement('td');
+        tdDue.textContent = task.dueDate.toLocaleDateString();
+        tr.appendChild(tdDue);
+
+        // Days remaining
+        let tdRemaining = document.createElement('td');
+        tdRemaining.textContent = task.daysRemaining >= 0 ? task.daysRemaining + " days" : "Past due";
+        tr.appendChild(tdRemaining);
+
+        // Visual cues for overdue or upcoming tasks
+        if (task.daysRemaining < 0) {
           tr.classList.add('due');
-        } else if (daysRemaining <= task.leadTime) {
+        } else if (task.daysRemaining <= 2) {
           tr.classList.add('upcoming');
         }
 
-        let tdTask = document.createElement('td');
-        tdTask.textContent = task.name + " for " + projectName;
+        // Strike through if completed
+        if (task.completed) {
+          tr.style.textDecoration = "line-through";
+        }
 
-        let tdDue = document.createElement('td');
-        tdDue.textContent = dueDate.toLocaleDateString();
-
-        let tdRemaining = document.createElement('td');
-        tdRemaining.textContent = daysRemaining >= 0 ? daysRemaining + " days" : "Past due";
-
-        tr.appendChild(tdTask);
-        tr.appendChild(tdDue);
-        tr.appendChild(tdRemaining);
         tbody.appendChild(tr);
       });
     }
+
+    // Function to load saved tasks from localStorage
+    function loadSavedTasks() {
+      const saved = localStorage.getItem("tasksList");
+      if (saved) {
+        tasksList = JSON.parse(saved);
+        renderTasksTable();
+        alert("Loaded saved to‑do list.");
+      } else {
+        alert("No saved tasks found.");
+      }
+    }
+
+    // Function to schedule notifications (experimental – works only while the app is open)
+    function scheduleNotifications() {
+      if (!("Notification" in window)) {
+        alert("This browser does not support notifications.");
+        return;
+      }
+      Notification.requestPermission().then(function(permission) {
+        if (permission === "granted") {
+          tasksList.forEach(task => {
+            // Calculate delay until due date (if in the future)
+            let now = new Date();
+            let delay = task.dueDate - now;
+            if (delay > 0) {
+              setTimeout(() => {
+                new Notification("Task Reminder", {
+                  body: task.name + " is due in " + task.daysRemaining + " days.",
+                  icon: "icon-192.png"
+                });
+              }, delay);
+            }
+          });
+          alert("Reminders scheduled (while app is open).");
+        } else {
+          alert("Notification permission denied.");
+        }
+      });
+    }
+
+    // Automatically load saved tasks on page load
+    window.addEventListener('load', function() {
+      loadSavedTasks();
+    });
   </script>
 
   <!-- Service Worker Registration for Offline Capability -->
@@ -236,4 +328,3 @@
   </script>
 </body>
 </html>
-
