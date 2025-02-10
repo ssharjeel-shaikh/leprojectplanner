@@ -198,7 +198,7 @@
 
         let taskItem = {
           name: task.name + " for " + projectName,
-          dueDate: dueDate,
+          dueDate: dueDate, // Note: This will be saved as a string in localStorage
           daysRemaining: daysRemaining,
           completed: false
         };
@@ -229,7 +229,6 @@
         checkbox.addEventListener('change', function() {
           tasksList[index].completed = this.checked;
           localStorage.setItem("tasksList", JSON.stringify(tasksList));
-          // Update row styling
           tr.style.textDecoration = this.checked ? "line-through" : "none";
         });
         tdCheckbox.appendChild(checkbox);
@@ -240,9 +239,10 @@
         tdTask.textContent = task.name;
         tr.appendChild(tdTask);
 
-        // Due date
+        // Convert the saved dueDate string back into a Date object
+        let dateObj = new Date(task.dueDate);
         let tdDue = document.createElement('td');
-        tdDue.textContent = task.dueDate.toLocaleDateString();
+        tdDue.textContent = dateObj.toLocaleDateString();
         tr.appendChild(tdDue);
 
         // Days remaining
@@ -289,7 +289,7 @@
           tasksList.forEach(task => {
             // Calculate delay until due date (if in the future)
             let now = new Date();
-            let delay = task.dueDate - now;
+            let delay = new Date(task.dueDate) - now;
             if (delay > 0) {
               setTimeout(() => {
                 new Notification("Task Reminder", {
