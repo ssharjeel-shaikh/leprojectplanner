@@ -1,12 +1,11 @@
-sw.js
-
 // sw.js
-const CACHE_NAME = 'planner-cache-v1';
+const CACHE_NAME = 'planner-app-cache-v1';
 const urlsToCache = [
-  '/',
   '/index.html',
   '/manifest.json',
-  // Add any additional assets like CSS, images, etc.
+  '/icon-192.png',
+  '/icon-512.png'
+  // Add other assets (CSS, JS files, etc.) if needed.
 ];
 
 self.addEventListener('install', event => {
@@ -21,8 +20,6 @@ self.addEventListener('install', event => {
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
-      .then(response => {
-        return response || fetch(event.request);
-      })
+      .then(response => response || fetch(event.request))
   );
 });
